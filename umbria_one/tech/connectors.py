@@ -2,7 +2,7 @@
 
 
 #
-
+from ib_insync import IB
 
 #
 
@@ -14,6 +14,7 @@ def get_ibkr_connector(
     ibkr_client_id: int,
 ) -> IB:
     """
+    Create IBKR connector
 
     :param ibkr_ip: ???
     :param ibkr_port: ???
