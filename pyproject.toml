@@ -20,6 +20,9 @@ matplotlib = "^3.10.8"
 seaborn = "^0.13.2"
 jupyter = "^1.1.1"
 python-dotenv = "^1.2.1"
+ib-insync = "^0.9.86"
+alpaca-py = "^0.43.2"
+pytz = "^2026.1.post1"
 
 
 [build-system]

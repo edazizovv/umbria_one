@@ -1,11 +1,12 @@
 #
+import os
 import datetime
 
 #
-
+from dotenv import load_dotenv
 
 #
-from umbria_one.scanner import ibkr as scan_ibkr, kraken as scan_kraken
+from umbria_one.scanner import alpaca as scan_broker, kraken as scan_crypto
 from umbria_one.tech import connectors as conn
 
 #
@@ -13,33 +14,35 @@ from umbria_one.tech import connectors as conn
 
 # 0) set up
 
+load_dotenv()
+
 ticker = "AAPL"
-today = datetime.date.today().strftime(format="%Y%m%d")
+today = datetime.date.today()
 
-ib = conn.get_ibkr_connector(
-    ibkr_ip="127.0.0.1",
-    ibkr_port=7497,
-    ibkr_client_id=1,
+ac = conn.get_alpaca_connector(
+    api_key=os.environ.get("ALPACA_API_KEY"),
+    secret_key=os.environ.get("ALPACA_USER_KEY"),
+    paper=False,
 )
 
-# 1) collect the token price from kraken
+# 1) collect the token price from crypto
 
-token_price = scan_kraken.get_reference_price(
+# token_price = scan_crypto.get_reference_price(
+#     ticker=ticker,
+# )
+
+# 2) collect the market price from broker
+
+market_price = scan_broker.get_market_price(
+    ac=ac,
     ticker=ticker,
 )
 
-# 2) collect the market price from ibkr
+# 3) collect the options from broker
 
-market_price = scan_ibkr.get_market_price(
-    ib=ib,
+options = scan_broker.get_options(
+    ac=ac,
     ticker=ticker,
-)
-
-# 3) collect the options from ibkr
-
-options = scan_ibkr.get_options(
-    ib=ib,
-    ticker=ticker,
-    reference_price=token_price,
+    reference_price=market_price,     # should be token_price
     reference_date=today,
 )
