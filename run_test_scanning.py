@@ -27,9 +27,9 @@ ac = conn.get_alpaca_connector(
 
 # 1) collect the token price from crypto
 
-# token_price = scan_crypto.get_reference_price(
-#     ticker=ticker,
-# )
+token_price = scan_crypto.get_reference_price(
+    ticker=ticker,
+)
 
 # 2) collect the market price from broker
 
