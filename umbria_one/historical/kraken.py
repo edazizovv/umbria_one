@@ -10,7 +10,7 @@ import pandas
 
 
 #
-def get_historical_ohlc(
+def get_historical_token_ohlc(
     ticker: str,
     interval: int,
     since: Union[datetime, None] = None,

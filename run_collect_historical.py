@@ -28,7 +28,7 @@ ac = conn.get_alpaca_connector(
 
 # 1) collect the token price from crypto
 
-crypto_historical_data, _, _ = historical_crypto.get_historical_ohlc(
+crypto_historical_data, _, _ = historical_crypto.get_historical_token_ohlc(
     ticker=ticker,
     interval=60,
     # since=int(datetime.datetime(2023, 1, 1).timestamp()),
@@ -36,7 +36,7 @@ crypto_historical_data, _, _ = historical_crypto.get_historical_ohlc(
 
 # 2) collect the market price from broker
 
-broker_historical_data = historical_broker.get_historical_ohlc(
+broker_historical_data = historical_broker.get_historical_stock_ohlc(
     ac=ac,
     ticker=ticker,
     interval=TimeFrame.Hour,
@@ -46,8 +46,13 @@ broker_historical_data = historical_broker.get_historical_ohlc(
 
 # 3) collect the options from the broker
 
-...
-
+broker_historical_data = historical_broker.get_mass_load_option_dynamics(
+    ac=ac,
+    ticker=ticker,
+    interval=TimeFrame.Hour,
+    interval_datetime_delta=datetime.timedelta(hours=1),
+    data_historical_stock_ohlc_df=broker_historical_data,
+)
 
 # 4) combine the data
 
@@ -70,6 +75,52 @@ joint_data["close_diff"] = (
     joint_data["close_crypto"] -
     joint_data["close_broker"]
 )
-"""
-c
-"""
+joint_data["open_call_put_diff"] = (
+    joint_data["call_option_open"] -
+    joint_data["put_option_open"]
+)
+joint_data["close_call_put_diff"] = (
+    joint_data["call_option_close"] -
+    joint_data["put_option_close"]
+)
+joint_data["costs_plan_a"] = 0.40   # 0.10 0.25 0.40
+
+joint_data["open_expected_result"] = (
+    -joint_data["open_diff"]
+    + joint_data["open_call_put_diff"]
+    - joint_data["costs_plan_a"]
+)
+joint_data["close_expected_result"] = (
+    -joint_data["close_diff"]
+    + joint_data["close_call_put_diff"]
+    - joint_data["costs_plan_a"]
+)
+
+joint_data["open_indicator_delta"] = (
+    joint_data
+    .apply(
+        func=lambda x: 1 if x["open_diff"] <= -0.5 else 0,
+        axis=1,
+    )
+)
+joint_data["open_indicator_full"] = (
+    joint_data
+    .apply(
+        func=lambda x: 1 if ((x["open_expected_result"] >= 0) and (x["open_diff"] <= -0.5)) else 0,
+        axis=1,
+    )
+)
+joint_data["close_indicator_delta"] = (
+    joint_data
+    .apply(
+        func=lambda x: 1 if x["close_diff"] <= -0.5 else 0,
+        axis=1,
+    )
+)
+joint_data["close_indicator_full"] = (
+    joint_data
+    .apply(
+        func=lambda x: 1 if ((x["close_expected_result"] >= 0) and (x["close_diff"] <= -0.5)) else 0,
+        axis=1,
+    )
+)
