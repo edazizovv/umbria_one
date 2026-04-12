@@ -31,6 +31,29 @@ def get_market_price(
     return market_price
 
 
+def get_stocks_lvl1_orderbook(
+    ac: AlpacaConnector,
+    ticker: str,
+) -> dict:
+
+    trade_request = StockLatestTradeRequest(symbol_or_symbols=ticker)
+    current_orderbook = ac.data.stocks.get_stock_latest_quote(trade_request)
+    stock_orderbook = current_orderbook[ticker]
+
+    return stock_orderbook
+
+
+async def get_websockets_stocks_lvl1_orderbook_stream(
+    ac: AlpacaConnector,
+    ticker: str,
+    stream_handler,
+):
+
+    ac.data_live.subscribe_quotes(stream_handler, ticker)
+
+    await ac.data_live._run_forever()
+
+
 def get_options(
     ac: AlpacaConnector,
     ticker: str,
