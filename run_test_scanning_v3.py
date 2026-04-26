@@ -25,17 +25,47 @@ ac = conn.get_alpaca_connector(
 
 async def stock_handler(data):
 
-    print(f"STOCK UPDATE: latest_bid={data['stock_bid']:.4f}; latest_ask={data['stock_ask']:.4f}")
+    try:
+        print(f"STOCK UPDATE: latest_bid={data.bid_price:.4f}; latest_ask={data.ask_price:.4f}")
+    except Exception as e:
+        print("ERROR:", e)
 
 
 async def token_handler(data):
 
-    data = {
-        "latest_bid": data["bids"][0]["price"] if len(data["bids"]) > 0 else numpy.nan,
-        "latest_ask": data["asks"][0]["price"] if len(data["asks"]) > 0 else numpy.nan,
-    }
+    try:
+        data = {
+            "latest_bid": data["bids"][0]["price"] if len(data["bids"]) > 0 else numpy.nan,
+            "latest_ask": data["asks"][0]["price"] if len(data["asks"]) > 0 else numpy.nan,
+        }
 
-    print(f"TOKEN UPDATE: latest_bid={data['latest_bid']:.4f}; latest_ask={data['latest_ask']:.4f}")
+        print(f"TOKEN UPDATE: latest_bid={data['latest_bid']:.4f}; latest_ask={data['latest_ask']:.4f}")
+    except Exception as e:
+        print("ERROR:", e)
+
+
+async def broker_portfolio_handler(positions):
+
+    print("ptf handler")
+    try:
+
+        for p in positions:
+            print(p.symbol, p.qty, p.market_value, p.unrealized_pl)
+
+    except Exception as e:
+        print("ERROR:", e)
+
+
+async def broker_orders_handler(orders):
+
+    print("ord handler")
+    try:
+
+        for o in orders:
+            print(o.symbol, o.qty, o.filled_qty, o.status)
+
+    except Exception as e:
+        print("ERROR:", e)
 
 
 async def main():
@@ -46,6 +76,14 @@ async def main():
             ticker=ticker,
             stream_handler=stock_handler,
         ),
+        # scan_broker.get_rest_portfolio_state(
+        #     ac=ac,
+        #     stream_handler=broker_portfolio_handler,
+        # ),
+        # scan_broker.get_rest_current_orders(
+        #     ac=ac,
+        #     stream_handler=broker_orders_handler,
+        # ),
         # scan_crypto.get_websockets_token_lvl2_orderbook_stream(
         #     ticker=ticker,
         #     stream_handler=token_handler,

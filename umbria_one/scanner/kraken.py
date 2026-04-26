@@ -68,7 +68,6 @@ async def get_websockets_token_lvl2_orderbook_stream(
             result = json.loads(await ws.recv())
             if ("data" in result) and ("channel" in result) and ("type" in result):
                 if (result["channel"] == "book"):
-                    print(result.keys())
                     if (result["type"] in ("snapshot", "update")):
                         await stream_handler(result["data"][0])
 

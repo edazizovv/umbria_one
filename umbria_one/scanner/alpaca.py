@@ -1,4 +1,5 @@
 #
+import asyncio
 import datetime
 
 #
@@ -52,6 +53,30 @@ async def get_websockets_stocks_lvl1_orderbook_stream(
     ac.data_live.subscribe_quotes(stream_handler, ticker)
 
     await ac.data_live._run_forever()
+
+
+async def get_rest_portfolio_state(
+    ac: AlpacaConnector,
+    stream_handler,
+):
+    while True:
+        positions = await asyncio.to_thread(ac.trading.get_all_positions)
+
+        await stream_handler(positions=positions)
+
+        await asyncio.sleep(5)
+
+
+async def get_rest_current_orders(
+    ac: AlpacaConnector,
+    stream_handler,
+):
+    while True:
+        orders = await asyncio.to_thread(ac.trading.get_orders)
+
+        await stream_handler(orders=orders)
+
+        await asyncio.sleep(5)
 
 
 def get_options(

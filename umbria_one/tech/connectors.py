@@ -4,7 +4,7 @@ import uuid
 #
 # from ib_insync import IB
 from alpaca.data.historical import StockHistoricalDataClient, OptionHistoricalDataClient
-from alpaca.data.live import StockDataStream
+from alpaca.data.live import StockDataStream, CryptoDataStream
 from alpaca.trading.client import TradingClient
 
 #
@@ -76,6 +76,7 @@ class AlpacaConnector:
         self.data = AlpacaConnectorData(api_key=api_key, secret_key=secret_key)
         self.trading = TradingClient(api_key, secret_key, paper=paper)
         self.data_live = StockDataStream(api_key=api_key, secret_key=secret_key)
+        # self.data_live = CryptoDataStream(api_key=api_key, secret_key=secret_key)
 
 
 def get_alpaca_connector(
