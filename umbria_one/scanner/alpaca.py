@@ -1,6 +1,7 @@
 #
 import asyncio
 import datetime
+from functools import partial
 
 #
 import pandas
@@ -50,7 +51,8 @@ async def get_websockets_stocks_lvl1_orderbook_stream(
     stream_handler,
 ):
 
-    ac.data_live.subscribe_quotes(stream_handler, ticker)
+    bound_handler = partial(stream_handler, ticker=ticker)
+    ac.data_live.subscribe_quotes(bound_handler, ticker)
 
     await ac.data_live._run_forever()
 

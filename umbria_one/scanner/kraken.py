@@ -2,6 +2,7 @@
 import json
 import requests
 import websockets
+from functools import partial
 
 #
 import numpy
@@ -50,6 +51,8 @@ async def get_websockets_token_lvl2_orderbook_stream(
     stream_handler,
 ):
 
+    bound_handler = partial(stream_handler, ticker=ticker)
+
     uri = "wss://ws.kraken.com/v2"
 
     async with websockets.connect(uri) as ws:
@@ -69,7 +72,7 @@ async def get_websockets_token_lvl2_orderbook_stream(
             if ("data" in result) and ("channel" in result) and ("type" in result):
                 if (result["channel"] == "book"):
                     if (result["type"] in ("snapshot", "update")):
-                        await stream_handler(result["data"][0])
+                        await bound_handler(result["data"][0])
 
 
 def get_reference_price(
