@@ -1,15 +1,18 @@
 #
 import os
+import json
 import asyncio
 import datetime
+from functools import partial
 
 #
-import numpy
 from dotenv import load_dotenv
 
 #
 from umbria_one.tech import connectors as conn
 from umbria_one.scanner import alpaca as scan_broker, kraken as scan_crypto
+from umbria_one.dbio.dbio import update_live_scanner_tab
+from umbria_one.dbio.dbutils import history_worker, CurrentData
 
 #
 load_dotenv()
@@ -23,23 +26,59 @@ ac = conn.get_alpaca_connector(
     paper=False,
 )
 
-async def stock_handler(data):
+async def broker_handler(data, ticker, history_queue):
+
+    print(f"loading broker {ticker}...")
+    data = json.loads(data.model_dump_json())
+    data = {
+        "source_id": "broker",
+        "entity_id": ticker,
+        "last_updated": datetime.datetime.now(datetime.UTC).isoformat(),
+        "payload": data,
+    }
 
     try:
-        print(f"STOCK UPDATE: latest_bid={data.bid_price:.4f}; latest_ask={data.ask_price:.4f}")
+        # await update_live_scanner_tab(
+        #     data=data,
+        # )
+
+        await history_queue.put(data)
+
+        print(f"Queue size: {history_queue.qsize()}")
+
     except Exception as e:
         print("ERROR:", e)
 
 
-async def token_handler(data):
+async def crypto_handler(data, ticker, history_queue, current_data):
+
+    print(f"loading crypto {ticker}...")
+    data = {
+        "source_id": "crypto",
+        "entity_id": ticker,
+        "last_updated": datetime.datetime.now(datetime.UTC).isoformat(),
+        "payload": data,
+    }
 
     try:
-        data = {
-            "latest_bid": data["bids"][0]["price"] if len(data["bids"]) > 0 else numpy.nan,
-            "latest_ask": data["asks"][0]["price"] if len(data["asks"]) > 0 else numpy.nan,
-        }
+        # await update_live_scanner_tab(
+        #     data=data,
+        # )
 
-        print(f"TOKEN UPDATE: latest_bid={data['latest_bid']:.4f}; latest_ask={data['latest_ask']:.4f}")
+        if data["payload"]["type"] == "update":
+            if len(data["payload"]["asks"]) == 0:
+                data["payload"]["asks"] = current_data["asks"]
+            else:
+                current_data["asks"] = data["payload"]["asks"]
+            if len(data["payload"]["bids"]) == 0:
+                data["payload"]["bids"] = current_data["bids"]
+            else:
+                current_data["bids"] = data["payload"]["bids"]
+        else:
+            current_data.update(data["payload"])
+
+        await history_queue.put(data)
+
     except Exception as e:
         print("ERROR:", e)
 
@@ -70,25 +109,41 @@ async def broker_orders_handler(orders):
 
 async def main():
     print("Starting...")
-    await asyncio.gather(
-        scan_broker.get_websockets_stocks_lvl1_orderbook_stream(
-            ac=ac,
-            ticker=ticker,
-            stream_handler=stock_handler,
-        ),
-        # scan_broker.get_rest_portfolio_state(
-        #     ac=ac,
-        #     stream_handler=broker_portfolio_handler,
-        # ),
-        # scan_broker.get_rest_current_orders(
-        #     ac=ac,
-        #     stream_handler=broker_orders_handler,
-        # ),
-        # scan_crypto.get_websockets_token_lvl2_orderbook_stream(
-        #     ticker=ticker,
-        #     stream_handler=token_handler,
-        # ),
-    )
+
+    history_queue = asyncio.Queue()
+
+    current_data = CurrentData()
+
+    worker_task = asyncio.create_task(history_worker(
+        history_queue=history_queue,
+    ))
+
+    bound_broker_handler = partial(broker_handler, history_queue=history_queue)
+    bound_crypto_handler = partial(crypto_handler, history_queue=history_queue, current_data=current_data)
+
+    try:
+        await asyncio.gather(
+            # scan_broker.get_websockets_stocks_lvl1_orderbook_stream(
+            #     ac=ac,
+            #     ticker=ticker,
+            #     stream_handler=bound_broker_handler,
+            # ),
+            # scan_broker.get_rest_portfolio_state(
+            #     ac=ac,
+            #     stream_handler=broker_portfolio_handler,
+            # ),
+            # scan_broker.get_rest_current_orders(
+            #     ac=ac,
+            #     stream_handler=broker_orders_handler,
+            # ),
+            scan_crypto.get_websockets_token_lvl2_orderbook_stream(
+                ticker=ticker,
+                stream_handler=bound_crypto_handler,
+            ),
+        )
+    finally:
+        worker_task.cancel()
+        await asyncio.gather(worker_task, return_exceptions=True)
 
 if __name__ == "__main__":
     asyncio.run(main())

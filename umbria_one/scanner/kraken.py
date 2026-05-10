@@ -72,7 +72,9 @@ async def get_websockets_token_lvl2_orderbook_stream(
             if ("data" in result) and ("channel" in result) and ("type" in result):
                 if (result["channel"] == "book"):
                     if (result["type"] in ("snapshot", "update")):
-                        await bound_handler(result["data"][0])
+                        result_refined = result["data"][0]
+                        result_refined["type"] = result["type"]
+                        await bound_handler(result_refined)
 
 
 def get_reference_price(

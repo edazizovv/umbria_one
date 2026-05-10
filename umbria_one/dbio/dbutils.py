@@ -11,6 +11,17 @@ from umbria_one.dbio.dbio import save_live_and_history_batch
 
 
 #
+class CurrentData:
+    def __init__(self):
+        self.data = None
+    def update(self, data):
+        self.data = data
+    def __getitem__(self, key):
+        return self.data[key]
+    def __setitem__(self, key, value):
+        self.data[key] = value
+
+
 async def history_worker(
     history_queue,
     batch_size = 100,
