@@ -6,6 +6,8 @@ import datetime
 import pandas
 from sqlalchemy import text, select
 from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy import Text, TIMESTAMP
+from sqlalchemy.dialects.postgresql import UUID, JSONB
 
 
 #
@@ -49,6 +51,13 @@ async def save_history_signals(
 
     async with engine.begin() as conn:
 
+        sql_types = {
+            "strategy_code": Text,
+            "signal_id": Text,
+            "generated_at": TIMESTAMP(timezone=True),
+            "parameters": JSONB,
+        }
+
         await conn.run_sync(
             lambda sync_conn: df.to_sql(
                 name=table_name,
@@ -56,6 +65,7 @@ async def save_history_signals(
                 if_exists='append',
                 index=False,
                 method='multi',
+                dtype=sql_types,
             )
         )
     print(f"Signals table {table_name} updated with {len(df)} fresh rows.")
@@ -75,6 +85,13 @@ async def save_live_signals(
     async with engine.begin() as conn:
         await conn.execute(text(f"TRUNCATE TABLE {table_name}"))
 
+        sql_types = {
+            "strategy_code": Text,
+            "signal_id": Text,
+            "generated_at": TIMESTAMP(timezone=True),
+            "parameters": JSONB,
+        }
+
         await conn.run_sync(
             lambda sync_conn: df.to_sql(
                 name=table_name,
@@ -82,6 +99,7 @@ async def save_live_signals(
                 if_exists='append',
                 index=False,
                 method='multi',
+                dtype=sql_types,
             )
         )
     print(f"Signals table {table_name} updated with {len(df)} fresh rows.")

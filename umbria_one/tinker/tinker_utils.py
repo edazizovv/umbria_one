@@ -1,8 +1,9 @@
 #
-
+import uuid
+import datetime
 
 #
-from sqlalchemy import select
+import pandas
 
 
 #
@@ -18,6 +19,7 @@ async def update_signals(
     live_signals_tab = "live_signals"
     historical_signals_tab = "historical_signals"
     sources = ["crypto", "broker"]
+    strategy_code = "AAA"
 
     live_scanner_df = await get_live_scanner_df(
         sources=sources,
@@ -28,13 +30,29 @@ async def update_signals(
         spread=spread,
     )
 
+    live_result = pandas.DataFrame(
+        data={
+            "strategy_code": [strategy_code],
+            "signal_id": [str(uuid.uuid4())],
+            "generated_at": [datetime.datetime.now(tz=datetime.UTC)],
+            "parameters": [joint_selected_df.to_json()],
+        }
+    )
     await save_live_signals(
-        df=joint_selected_df,
+        df=live_result,
         table_name=live_signals_tab,
     )
 
+    historical_result = pandas.DataFrame(
+        data={
+            "strategy_code": [strategy_code],
+            "signal_id": [str(uuid.uuid4())],
+            "generated_at": [datetime.datetime.now(tz=datetime.UTC)],
+            "parameters": [joint_df.to_json()],
+        }
+    )
     await save_history_signals(
-        df=joint_df,
+        df=historical_result,
         table_name=historical_signals_tab,
     )
 

@@ -60,14 +60,22 @@ async def calculate_signals(
         .cumsum()
     )
 
-    live_scanner_broker_bids_df = pandas.json_normalize(
-        live_scanner_broker_df['payload']
-    ).rename(columns={
-        "bid_price": "broker_bid_price",
-        "bid_size": "broker_bid_amount",
-    }).sort_values(
-        by=["entity_id", "broker_bid_price"],
-        ascending=[True, False],
+    live_scanner_broker_bids_df = (
+        live_scanner_broker_df[["entity_id"]]
+        .join(
+            pandas.json_normalize(
+                live_scanner_broker_df["payload"]
+            )
+        )
+        .rename(columns={
+            "bid_price": "broker_bid_price",
+            "bid_size": "broker_bid_amount",
+        })
+        .sort_values(
+            by=["entity_id", "broker_bid_price"],
+            ascending=[True, False],
+        )
+        [["entity_id", "broker_bid_amount", "broker_bid_price"]]
     )
     live_scanner_broker_bids_df["amount"] = (
         live_scanner_broker_bids_df
@@ -77,14 +85,22 @@ async def calculate_signals(
         ["broker_bid_amount"]
         .cumsum()
     )
-    live_scanner_broker_asks_df = pandas.json_normalize(
-        live_scanner_broker_df['payload']
-    ).rename(columns={
-        "ask_price": "broker_ask_price",
-        "ask_size": "broker_ask_amount",
-    }).sort_values(
-        by=["entity_id", "broker_ask_price"],
-        ascending=[True, True],
+    live_scanner_broker_asks_df = (
+        live_scanner_broker_df[["entity_id"]]
+        .join(
+            pandas.json_normalize(
+                live_scanner_broker_df["payload"]
+            )
+        )
+        .rename(columns={
+            "ask_price": "broker_ask_price",
+            "ask_size": "broker_ask_amount",
+        })
+        .sort_values(
+            by=["entity_id", "broker_ask_price"],
+            ascending=[True, True],
+        )
+        [["entity_id", "broker_ask_amount", "broker_ask_price"]]
     )
     live_scanner_broker_asks_df["amount"] = (
         live_scanner_broker_asks_df
@@ -117,7 +133,7 @@ async def calculate_signals(
         )
         .sort_values(
             by=["entity_id", "amount"],
-            asending=[True, True],
+            ascending=[True, True],
         )
     )
 
